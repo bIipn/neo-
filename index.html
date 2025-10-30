@@ -40,7 +40,6 @@
       margin: 15px 0;
       font-size: 1.2em;
     }
-    .clear { clear: both; }
     button {
       background: #111;
       color: #0f0;
@@ -63,6 +62,7 @@
     <select id="timezone-select"></select>
   </div>
 
+  <!-- Chess board will go here -->
   <div id="chess-container" class="hidden">
     <h2>Play Chess vs Bot (Low ELO)</h2>
     <div id="board" style="width: 400px; margin: 0 auto;"></div>
@@ -70,7 +70,7 @@
     <button id="new-game">New Game</button>
   </div>
 
-  <!-- Chess.js & Chessboard.js CDN -->
+  <!-- Load Chess.js and Chessboard.js FIRST -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/1.0.0-beta.5/chess.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/chessboard-js/1.0.0/chessboard-1.0.0.min.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/chessboard-js/1.0.0/chessboard-1.0.0.min.css" />
@@ -86,10 +86,12 @@
       if (i < words.length) {
         typingElement.textContent += (i > 0 ? " " : "") + words[i];
         i++;
-        setTimeout(typeWord, 400 + Math.random() * 300); // Random typing speed
+        setTimeout(typeWord, 400 + Math.random() * 300);
       } else {
+        // Show chess after typing
         setTimeout(() => {
           document.getElementById("chess-container").classList.remove("hidden");
+          initChessBoard(); // NOW initialize the board
         }, 800);
       }
     }
@@ -110,7 +112,7 @@
     timezones.forEach(tz => {
       const opt = document.createElement("option");
       opt.value = tz;
-      opt.textContent = tz.replace("_", " ");
+      opt.textContent = tz.replace("_", " ").replace("America/", "").replace("Asia/", "").replace("Europe/", "");
       if (tz === currentTz) opt.selected = true;
       tzSelect.appendChild(opt);
     });
@@ -137,75 +139,80 @@
     setInterval(updateClock, 1000);
 
     // === CHESS GAME ===
-    let game = new Chess();
+    let game;
     let board;
     const statusEl = document.getElementById("status");
     const newGameBtn = document.getElementById("new-game");
 
-    function makeRandomMove() {
-      const moves = game.moves();
-      if (moves.length === 0) return;
+    // Initialize chess board (called after typing)
+    function initChessBoard() {
+      game = new Chess();
 
-      // Low ELO: pick random move (sometimes blunders)
-      const randomIdx = Math.floor(Math.random() * moves.length);
-      const move = moves[randomIdx];
-      game.move(move);
-      board.position(game.fen());
+      board = Chessboard('board', {
+        draggable: true,
+        position: 'start',
+        onDrop: onDrop
+      });
+
       updateStatus();
 
-      // Bot thinks fast
-      if (!game.isGameOver()) {
-        setTimeout(makeRandomMove, 300 + Math.random() * 400);
+      // If black starts (rare), bot moves first
+      if (game.turn() === 'b') {
+        setTimeout(makeBotMove, 600);
       }
     }
 
-    function updateStatus() {
-      let status = "";
-      if (game.isCheckmate()) {
-        status = "Checkmate! " + (game.turn() === "w" ? "Black" : "White") + " wins!";
-      } else if (game.isDraw()) {
-        status = "Draw!";
-      } else if (game.isCheck()) {
-        status = "Check! Your move.";
-      } else {
-        status = game.turn() === "w" ? "Your move (White)" : "Bot is thinking...";
+    function makeBotMove() {
+      const moves = game.moves();
+      if (moves.length === 0 || game.isGameOver()) return;
+
+      // Low ELO: random legal move
+      const randomMove = moves[Math.floor(Math.random() * moves.length)];
+      game.move(randomMove);
+      board.position(game.fen());
+      updateStatus();
+
+      if (!game.isGameOver()) {
+        setTimeout(makeBotMove, 400 + Math.random() * 300);
       }
-      statusEl.textContent = status;
     }
 
     function onDrop(source, target) {
       const move = game.move({
         from: source,
         to: target,
-        promotion: "q"
+        promotion: 'q' // always promote to queen
       });
 
-      if (move === null) return "snapback";
+      if (move === null) return 'snapback';
 
       updateStatus();
-      window.setTimeout(makeRandomMove, 250);
+      window.setTimeout(makeBotMove, 300);
     }
 
-    function initBoard() {
-      board = Chessboard("board", {
-        draggable: true,
-        position: "start",
-        onDrop: onDrop
-      });
-      updateStatus();
+    function updateStatus() {
+      let status = '';
+      if (game.isCheckmate()) {
+        status = `Checkmate! ${game.turn() === 'w' ? 'Black' : 'White'} wins!`;
+      } else if (game.isDraw()) {
+        status = 'Draw!';
+      } else if (game.isCheck()) {
+        status = 'Check! Your move.';
+      } else {
+        status = game.turn() === 'w' ? 'Your move (White)' : 'Bot is thinking...';
+      }
+      statusEl.textContent = status;
     }
 
-    newGameBtn.addEventListener("click", () => {
+    // New Game Button
+    newGameBtn.addEventListener('click', () => {
       game = new Chess();
       board.start();
       updateStatus();
-      if (game.turn() === "b") {
-        setTimeout(makeRandomMove, 500);
+      if (game.turn() === 'b') {
+        setTimeout(makeBotMove, 600);
       }
     });
-
-    // Initialize after typing
-    setTimeout(initBoard, words.length * 600 + 2000);
 
   </script>
 </body>
