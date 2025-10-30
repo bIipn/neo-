@@ -3,170 +3,288 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Neo Clock & Chess</title>
-
-  <!-- 1. Load libraries FIRST -->
-  <link rel="stylesheet"
-        href="https://cdnjs.cloudflare.com/ajax/libs/chessboard-js/1.0.0/chessboard-1.0.0.min.css"
-        integrity="sha512-..." crossorigin="anonymous" referrerpolicy="no-referrer" />
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/1.0.0-beta.5/chess.min.js"
-          integrity="sha512-..." crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/chessboard-js/1.0.0/chessboard-1.0.0.min.js"
-          integrity="sha512-..." crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <title>Domain Admin Everett Holt</title>
 
   <style>
-    body{
-      font-family:'Courier New',monospace;
-      background:#000;color:#0f0;
-      text-align:center;margin:0;padding:20px;
-      overflow-x:hidden;
+    @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
+
+    body {
+      margin: 0;
+      padding: 0;
+      background: #000;
+      color: #0f0;
+      font-family: 'VT323', monospace;
+      overflow: hidden;
+      height: 100vh;
     }
-    #typing{font-size:1.8em;margin:40px 0;min-height:60px;white-space:pre-wrap;}
-    #clock-container{margin:30px 0;font-size:2em;}
-    select{
-      background:#111;color:#0f0;border:1px solid #0f0;padding:8px;
-      font-family:inherit;margin-top:10px;
+
+    canvas {
+      position: fixed;
+      top: 0; left: 0;
+      z-index: -1;
     }
-    #chess-container{margin:40px auto;max-width:500px;}
-    .status{margin:15px 0;font-size:1.2em;}
-    button{
-      background:#111;color:#0f0;border:1px solid #0f0;
-      padding:10px 20px;margin:10px;cursor:pointer;font-family:inherit;
+
+    #container {
+      position: relative;
+      z-index: 10;
+      padding: 20px;
+      max-width: 900px;
+      margin: 0 auto;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
     }
-    button:hover{background:#030;}
-    .hidden{display:none;}
+
+    #typing {
+      font-size: 2em;
+      margin: 40px 0;
+      min-height: 60px;
+      text-align: center;
+      letter-spacing: 2px;
+    }
+
+    #terminal {
+      background: rgba(0, 20, 0, 0.8);
+      border: 2px solid #0f0;
+      border-radius: 8px;
+      padding: 15px;
+      height: 45vh;
+      overflow-y: auto;
+      font-size: 1.4em;
+      box-shadow: 0 0 20px #0f0;
+    }
+
+    .msg {
+      margin: 8px 0;
+      animation: fadeIn 0.5s;
+    }
+
+    .user { color: #0ff; }
+    .sweetie { color: #0f0; }
+    .prompt {
+      color: #0f0;
+      margin-top: 10px;
+    }
+
+    #input-area {
+      display: flex;
+      margin-top: 10px;
+    }
+
+    #user-input {
+      flex: 1;
+      background: #000;
+      border: 1px solid #0f0;
+      color: #0f0;
+      padding: 10px;
+      font-family: 'VT323', monospace;
+      font-size: 1.3em;
+      outline: none;
+    }
+
+    #send-btn {
+      background: #000;
+      color: #0f0;
+      border: 1px solid #0f0;
+      padding: 0 15px;
+      font-family: 'VT323', monospace;
+      font-size: 1.3em;
+      cursor: pointer;
+    }
+
+    #send-btn:hover { background: #030; }
+
+    #clock-container {
+      text-align: center;
+      margin: 20px 0;
+      font-size: 1.8em;
+    }
+
+    select {
+      background: #000;
+      color: #0f0;
+      border: 1px solid #0f0;
+      padding: 8px;
+      font-family: 'VT323', monospace;
+      font-size: 1em;
+      margin-left: 10px;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
   </style>
 </head>
 <body>
 
-  <div id="typing"></div>
+  <canvas id="matrix"></canvas>
 
-  <div id="clock-container">
-    <div id="clock">Loading...</div>
-    <select id="timezone-select"></select>
-  </div>
+  <div id="container">
+    <div id="typing"></div>
 
-  <!-- Chess will be injected here -->
-  <div id="chess-container" class="hidden">
-    <h2>Play Chess vs Bot (Low ELO)</h2>
-    <div id="board" style="width:400px;margin:0 auto;"></div>
-    <div class="status" id="status">Your move (White)</div>
-    <button id="new-game">New Game</button>
+    <div id="clock-container">
+      <div id="clock">Loading...</div>
+      <select id="timezone-select"></select>
+    </div>
+
+    <div id="terminal">
+      <div class="msg sweetie">> Sweetie online. Awaiting input...</div>
+    </div>
+
+    <div id="input-area">
+      <input type="text" id="user-input" placeholder="Ask Sweetie..." autocomplete="off" />
+      <button id="send-btn">SEND</button>
+    </div>
   </div>
 
   <script>
-    /* ---------- TYPING ANIMATION ---------- */
-    const msg = "hello Neo, follow the white rabbit.";
-    const words = msg.split(" ");
-    const typingEl = document.getElementById("typing");
-    let idx = 0;
+    // === MATRIX RAIN BACKGROUND ===
+    const canvas = document.getElementById('matrix');
+    const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
 
-    function typeNext() {
-      if (idx < words.length) {
-        typingEl.textContent += (idx ? " " : "") + words[idx];
-        idx++;
-        setTimeout(typeNext, 400 + Math.random()*300);
-      } else {
-        setTimeout(showChess, 800);
+    const matrix = "ABCDEFGHIJKLMNOPQRSTUVWXYZ123456789@#$%^&*()*&^%+-/~{[|`]}";
+    const fontSize = 16;
+    const columns = canvas.width / fontSize;
+
+    const drops = [];
+    for (let x = 0; x < columns; x++) drops[x] = 1;
+
+    function draw() {
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.04)';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      ctx.fillStyle = '#0f0';
+      ctx.font = fontSize + 'px monospace';
+
+      for (let i = 0; i < drops.length; i++) {
+        const text = matrix[Math.floor(Math.random() * matrix.length)];
+        ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+
+        if (drops[i] * fontSize > canvas.height && Math.random() > 0.975)
+          drops[i] = 0;
+
+        drops[i]++;
       }
     }
-    setTimeout(typeNext, 1000);
 
-    /* ---------- WORLD CLOCK ---------- */
+    setInterval(draw, 35);
+    window.addEventListener('resize', () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    });
+
+    // === TYPING ANIMATION ===
+    const message = "Domain Admin Everett Holt, ask Sweetie a Question";
+    const typingEl = document.getElementById("typing");
+    let i = 0;
+
+    function typeChar() {
+      if (i < message.length) {
+        typingEl.textContent += message[i];
+        i++;
+        setTimeout(typeChar, 80 + Math.random() * 50);
+      } else {
+        setTimeout(() => {
+          typingEl.innerHTML += "<br><br>";
+          addMessage("sweetie", "> Ready. Type your question below.");
+        }, 1000);
+      }
+    }
+    setTimeout(typeChar, 1500);
+
+    // === WORLD CLOCK ===
     const clockEl = document.getElementById("clock");
     const tzSelect = document.getElementById("timezone-select");
     const timezones = [
-      "America/Los_Angeles","America/New_York","Europe/London",
-      "Europe/Paris","Asia/Tokyo","Australia/Sydney",
-      "America/Chicago","America/Denver","Asia/Dubai","Asia/Shanghai"
+      "America/Los_Angeles", "America/New_York", "Europe/London",
+      "Europe/Paris", "Asia/Tokyo", "Australia/Sydney"
     ];
-    let curTz = "America/Los_Angeles";
+    let currentTz = "America/Los_Angeles";
 
-    timezones.forEach(tz=>{
-      const o=document.createElement("option");
-      o.value=tz;
-      o.textContent=tz.replace(/_/g," ").replace(/^(America|Europe|Asia)\//,"");
-      if(tz===curTz) o.selected=true;
-      tzSelect.appendChild(o);
+    timezones.forEach(tz => {
+      const opt = document.createElement("option");
+      opt.value = tz;
+      opt.textContent = tz.replace(/^.*\//, "").replace("_", " ");
+      if (tz === currentTz) opt.selected = true;
+      tzSelect.appendChild(opt);
     });
 
-    function updateClock(){
-      const now = new Date().toLocaleString("en-US",{timeZone:curTz});
+    function updateClock() {
+      const now = new Date().toLocaleString("en-US", { timeZone: currentTz });
       const d = new Date(now);
-      clockEl.textContent =
-        d.toLocaleTimeString("en-US",{hour:"2-digit",minute:"2-digit",second:"2-digit",hour12:false}) +
-        " | " +
-        d.toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric"});
-    }
-    tzSelect.addEventListener("change",e=>{curTz=e.target.value;updateClock();});
-    updateClock(); setInterval(updateClock,1000);
-
-    /* ---------- CHESS ---------- */
-    let game, board;
-    const statusEl = document.getElementById("status");
-    const newGameBtn = document.getElementById("new-game");
-
-    function showChess(){
-      document.getElementById("chess-container").classList.remove("hidden");
-      initBoard();               // <-- board is created now
+      clockEl.textContent = d.toLocaleTimeString("en-US", {
+        hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false
+      }) + " | " + d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
     }
 
-    function initBoard(){
-      game = new Chess();
+    tzSelect.addEventListener("change", e => { currentTz = e.target.value; updateClock(); });
+    updateClock();
+    setInterval(updateClock, 1000);
 
-      board = Chessboard('board',{
-        draggable:true,
-        position:'start',
-        onDrop:onDrop
-      });
+    // === SWEETIE AI CHAT ===
+    const terminal = document.getElementById("terminal");
+    const input = document.getElementById("user-input");
+    const sendBtn = document.getElementById("send-btn");
 
-      updateStatus();
-      if(game.turn()==='b') setTimeout(botMove,600);
+    function addMessage(sender, text) {
+      const div = document.createElement("div");
+      div.className = "msg " + sender;
+      div.innerHTML = (sender === "user" ? "> " : "> ") + text;
+      terminal.appendChild(div);
+      terminal.scrollTop = terminal.scrollHeight;
     }
 
-    function botMove(){
-      const moves = game.moves();
-      if(!moves.length || game.isGameOver()) return;
-      const move = moves[Math.floor(Math.random()*moves.length)];
-      game.move(move);
-      board.position(game.fen());
-      updateStatus();
-      if(!game.isGameOver()) setTimeout(botMove,400+Math.random()*300);
-    }
+    // Simple knowledge base
+    const knowledge = {
+      "hello": "Hello, Admin Holt. How can I assist?",
+      "who are you": "I am Sweetie, your domain AI assistant. Ask me anything.",
+      "what time is it": () => `Current time in ${currentTz.replace(/^.*\//, "")}: ${new Date().toLocaleTimeString()}`,
+      "what is your purpose": "To serve Domain Admin Everett Holt and answer questions to the best of my ability.",
+      "tell me a joke": "Why do programmers prefer dark mode? Because light attracts bugs.",
+      "how do i deploy to railway": "Push your code to GitHub → Connect repo in Railway → Deploy. Done.",
+      "what is xai": "xAI builds AI to accelerate human scientific discovery. I was made by xAI.",
+      "who is grok": "Grok is an AI by xAI. I'm Sweetie — your personal terminal assistant."
+    };
 
-    function onDrop(src,tgt){
-      const move = game.move({from:src,to:tgt,promotion:'q'});
-      if(move===null) return 'snapback';
-      updateStatus();
-      setTimeout(botMove,300);
-    }
+    function getResponse(question) {
+      const q = question.toLowerCase().trim();
 
-    function updateStatus(){
-      let txt = '';
-      if(game.isCheckmate()){
-        txt = `Checkmate! ${game.turn()==='w'?'Black':'White'} wins!`;
-      }else if(game.isDraw()){
-        txt = 'Draw!';
-      }else if(game.isCheck()){
-        txt = 'Check! Your move.';
-      }else{
-        txt = game.turn()==='w' ? 'Your move (White)' : 'Bot is thinking...';
+      for (let key in knowledge) {
+        if (q.includes(key)) {
+          const res = knowledge[key];
+          return typeof res === "function" ? res() : res;
+        }
       }
-      statusEl.textContent = txt;
+
+      // Fallback
+      return "Sorry, I haven't learned the answer to that yet. Let me get back to you.";
     }
 
-    newGameBtn.addEventListener('click',()=>{
-      game = new Chess();
-      board.start();
-      updateStatus();
-      if(game.turn()==='b') setTimeout(botMove,600);
+    function sendMessage() {
+      const question = input.value.trim();
+      if (!question) return;
+
+      addMessage("user", question);
+      input.value = "";
+
+      setTimeout(() => {
+        const answer = getResponse(question);
+        addMessage("sweetie", answer);
+      }, 600 + Math.random() * 800);
+    }
+
+    sendBtn.addEventListener("click", sendMessage);
+    input.addEventListener("keypress", e => {
+      if (e.key === "Enter") sendMessage();
     });
 
-    /* ---------- ENSURE EVERYTHING IS READY ---------- */
-    window.addEventListener('DOMContentLoaded',()=>{
-      // Libraries are already loaded in <head>, so we can safely start typing.
-      // The board init is delayed until after the typing (see showChess()).
-    });
+    // Focus input after typing
+    setTimeout(() => input.focus(), message.length * 100 + 3000);
+
   </script>
 </body>
 </html>
