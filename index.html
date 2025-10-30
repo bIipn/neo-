@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Neo Clock & Chess</title>
+  <style>
+    body {
+      font-family: 'Courier New', monospace;
+      background: #000;
+      color: #0f0;
+      text-align: center;
+      margin: 0;
+      padding: 20px;
+      overflow-x: hidden;
+    }
+    #typing {
+      font-size: 1.8em;
+      margin: 40px 0;
+      min-height: 60px;
+      white-space: pre-wrap;
+    }
+    #clock-container {
+      margin: 30px 0;
+      font-size: 2em;
+    }
+    select {
+      background: #111;
+      color: #0f0;
+      border: 1px solid #0f0;
+      padding: 8px;
+      font-family: inherit;
+      margin-top: 10px;
+    }
+    #chess-container {
+      margin: 40px auto;
+      max-width: 500px;
+    }
+    .status {
+      margin: 15px 0;
+      font-size: 1.2em;
+    }
+    .clear { clear: both; }
+    button {
+      background: #111;
+      color: #0f0;
+      border: 1px solid #0f0;
+      padding: 10px 20px;
+      margin: 10px;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    button:hover { background: #030; }
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+
+  <div id="typing"></div>
+
+  <div id="clock-container">
+    <div id="clock">Loading...</div>
+    <select id="timezone-select"></select>
+  </div>
+
+  <div id="chess-container" class="hidden">
+    <h2>Play Chess vs Bot (Low ELO)</h2>
+    <div id="board" style="width: 400px; margin: 0 auto;"></div>
+    <div class="status" id="status">Your move (White)</div>
+    <button id="new-game">New Game</button>
+  </div>
+
+  <!-- Chess.js & Chessboard.js CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/1.0.0-beta.5/chess.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/chessboard-js/1.0.0/chessboard-1.0.0.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/chessboard-js/1.0.0/chessboard-1.0.0.min.css" />
+
+  <script>
+    // === TYPING ANIMATION ===
+    const message = "hello Neo, follow the white rabbit.";
+    const words = message.split(" ");
+    const typingElement = document.getElementById("typing");
+    let i = 0;
+
+    function typeWord() {
+      if (i < words.length) {
+        typingElement.textContent += (i > 0 ? " " : "") + words[i];
+        i++;
+        setTimeout(typeWord, 400 + Math.random() * 300); // Random typing speed
+      } else {
+        setTimeout(() => {
+          document.getElementById("chess-container").classList.remove("hidden");
+        }, 800);
+      }
+    }
+    setTimeout(typeWord, 1000);
+
+    // === WORLD CLOCK ===
+    const clockElement = document.getElementById("clock");
+    const tzSelect = document.getElementById("timezone-select");
+
+    const timezones = [
+      "America/Los_Angeles", "America/New_York", "Europe/London",
+      "Europe/Paris", "Asia/Tokyo", "Australia/Sydney",
+      "America/Chicago", "America/Denver", "Asia/Dubai", "Asia/Shanghai"
+    ];
+
+    let currentTz = "America/Los_Angeles";
+
+    timezones.forEach(tz => {
+      const opt = document.createElement("option");
+      opt.value = tz;
+      opt.textContent = tz.replace("_", " ");
+      if (tz === currentTz) opt.selected = true;
+      tzSelect.appendChild(opt);
+    });
+
+    function updateClock() {
+      const now = new Date().toLocaleString("en-US", { timeZone: currentTz });
+      const date = new Date(now);
+      clockElement.textContent = date.toLocaleTimeString("en-US", {
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: false
+      }) + "  |  " + date.toLocaleDateString("en-US", {
+        weekday: "short", month: "short", day: "numeric"
+      });
+    }
+
+    tzSelect.addEventListener("change", (e) => {
+      currentTz = e.target.value;
+      updateClock();
+    });
+
+    updateClock();
+    setInterval(updateClock, 1000);
+
+    // === CHESS GAME ===
+    let game = new Chess();
+    let board;
+    const statusEl = document.getElementById("status");
+    const newGameBtn = document.getElementById("new-game");
+
+    function makeRandomMove() {
+      const moves = game.moves();
+      if (moves.length === 0) return;
+
+      // Low ELO: pick random move (sometimes blunders)
+      const randomIdx = Math.floor(Math.random() * moves.length);
+      const move = moves[randomIdx];
+      game.move(move);
+      board.position(game.fen());
+      updateStatus();
+
+      // Bot thinks fast
+      if (!game.isGameOver()) {
+        setTimeout(makeRandomMove, 300 + Math.random() * 400);
+      }
+    }
+
+    function updateStatus() {
+      let status = "";
+      if (game.isCheckmate()) {
+        status = "Checkmate! " + (game.turn() === "w" ? "Black" : "White") + " wins!";
+      } else if (game.isDraw()) {
+        status = "Draw!";
+      } else if (game.isCheck()) {
+        status = "Check! Your move.";
+      } else {
+        status = game.turn() === "w" ? "Your move (White)" : "Bot is thinking...";
+      }
+      statusEl.textContent = status;
+    }
+
+    function onDrop(source, target) {
+      const move = game.move({
+        from: source,
+        to: target,
+        promotion: "q"
+      });
+
+      if (move === null) return "snapback";
+
+      updateStatus();
+      window.setTimeout(makeRandomMove, 250);
+    }
+
+    function initBoard() {
+      board = Chessboard("board", {
+        draggable: true,
+        position: "start",
+        onDrop: onDrop
+      });
+      updateStatus();
+    }
+
+    newGameBtn.addEventListener("click", () => {
+      game = new Chess();
+      board.start();
+      updateStatus();
+      if (game.turn() === "b") {
+        setTimeout(makeRandomMove, 500);
+      }
+    });
+
+    // Initialize after typing
+    setTimeout(initBoard, words.length * 600 + 2000);
+
+  </script>
+</body>
+</html>
