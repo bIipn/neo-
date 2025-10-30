@@ -26,7 +26,6 @@
     .msg{margin:8px 0;animation:fadeIn .5s;}
     .user{color:#0ff;}
     .sweetie{color:#0f0;}
-    .prompt{color:#0f0;margin-top:10px;}
     #input-area{display:flex;margin-top:10px;}
     #user-input{
       flex:1;background:#000;border:1px solid #0f0;color:#0f0;
@@ -58,7 +57,7 @@
   </div>
 
   <div id="terminal">
-    <div class="msg sweetie">> Sweetie online. Awaiting input...</div>
+    <div class="msg sweetie">> Sweetie online. Ask me anything.</div>
   </div>
 
   <div id="input-area">
@@ -119,101 +118,106 @@ function addMsg(sender,text){
   term.scrollTop=term.scrollHeight;
 }
 
-/* ---------- KNOWLEDGE BASE ---------- */
-const knowledge={
-
-  // ---------- MATH ----------
-  "calculate":calc,
-  "what is":calc,
-  "solve":calc,
-  "math":calc,
-
-  // ---------- PHYSICS ----------
-  "speed of light":"299 792 458 m/s (exact value in vacuum).",
-  "planck constant":"6.626 070 15 × 10⁻³⁴ J⋅s",
-  "gravitational constant":"6.674 30 × 10⁻¹¹ m³⋅kg⁻¹⋅s⁻²",
-  "newton second law":"F = m × a",
-  "einstein e=mc²":"E = m × c²  (c = speed of light)",
-  "kinetic energy":"KE = ½ m v²",
-  "potential energy":"PE = m g h",
-  "ohm law":"V = I × R",
-  "power":"P = V × I  or  P = I² R",
-
-  // ---------- CHEMISTRY ----------
-  "water boiling point":"100 °C at 1 atm",
-  "water freezing point":"0 °C",
-  "avogadro number":"6.022 140 76 × 10²³ mol⁻¹",
-  "periodic table":"H, He, Li, Be, B, C, N, O, F, Ne, … (118 elements)",
-
-  // ---------- BIOLOGY ----------
-  "photosynthesis":"6 CO₂ + 6 H₂O → C₆H₁₂O₆ + 6 O₂",
-  "dna":"Deoxyribonucleic acid – carries genetic information",
-  "mitochondria":"Powerhouse of the cell",
-
-  // ---------- HISTORY ----------
-  "declaration of independence":"July 4, 1776 (USA)",
-  "world war i":"1914 – 1918",
-  "world war ii":"1939 – 1945",
-  "moon landing":"July 20, 1969 – Apollo 11",
-  "fall of berlin wall":"November 9, 1989",
-  "columbus america":"1492",
-  "magna carta":"1215",
-  "french revolution":"1789",
-  "einstein relativity":"1905 (special), 1915 (general)",
-  "first computer":"ENIAC, 1945",
-
-  // ---------- FAMOUS PEOPLE ----------
-  "albert einstein":"Physicist, theory of relativity",
-  "isaac newton":"Laws of motion, universal gravitation",
-  "marie curie":"Discovered radium & polonium, 2 Nobel prizes",
-  "nikola tesla":"AC electricity, Tesla coil",
-  "ada lovelace":"First computer programmer",
-
-  // ---------- GENERAL ----------
-  "hello":"Hello, Admin Holt. How can I assist?",
-  "who are you":"I am Sweetie, your AI terminal assistant. I know math, physics, science, history, and more.",
-  "what is your purpose":"To answer your questions with accuracy and speed.",
-  "tell me a joke":"Why do physicists love elevators? They lift their spirits.",
-  "how do i deploy to railway":"Push code → GitHub → Connect repo in Railway → Deploy.",
-
-  // Add more entries here anytime!
-};
-
-/* ---------- CALCULATION ENGINE ---------- */
-function calc(q){
-  // Extract expression after keyword
-  const expr = q.replace(/^(calculate|what is|solve|math)\s+/i,'').trim();
-  if(!expr) return "Please provide a math expression.";
-  // Safe list of allowed tokens
-  const allowed = /^[\d\s\+\-\*\/\^\%\(\)\.eπ√,Math\.]+$/;
-  if(!allowed.test(expr)) return "Invalid characters in expression.";
-  try{
-    // Replace common symbols
-    let safe = expr
-      .replace(/π/g,'Math.PI')
-      .replace(/√/g,'Math.sqrt')
-      .replace(/\^/g,'**')
-      .replace(/,/g,'.');
-    const result = Function('"use strict";return ('+safe+')')();
-    return `${expr} = ${Number(result.toFixed(8))}`;
-  }catch(e){return "Math error – check syntax."}
+/* ---------- TEXT NORMALIZER ---------- */
+function normalize(q){
+  return q
+    .toLowerCase()
+    .replace(/[?!.,;:'"()]/g, '')   // remove punctuation
+    .replace(/\s+/g, ' ')           // collapse spaces
+    .trim();
 }
 
-/* ---------- RESPONSE LOGIC ---------- */
-function getAnswer(question){
-  const q = question.toLowerCase().trim();
+/* ---------- MATH ENGINE ---------- */
+function calculate(expr){
+  // Clean expression
+  let safe = expr
+    .replace(/π/g, 'Math.PI')
+    .replace(/√/g, 'Math.sqrt')
+    .replace(/\^/g, '**')
+    .replace(/,/g, '.');
 
-  // 1. Exact / partial keyword match
-  for(let key in knowledge){
-    if(q.includes(key)){
-      const res = knowledge[key];
-      return (typeof res === 'function') ? res(q) : res;
+  // Allow only safe tokens
+  if (!/^[\d\s\+\-\*\/\^\%\(\)\.eπ√,Math\.]+$/.test(expr)) return null;
+
+  try {
+    const result = Function('"use strict"; return (' + safe + ')')();
+    return Number(result.toFixed(8)).toString();
+  } catch (e) {
+    return null;
+  }
+}
+
+/* ---------- KNOWLEDGE BASE ---------- */
+const knowledge = {
+  // Math triggers
+  "what is": "math",
+  "calculate": "math",
+  "solve": "math",
+  "math": "math",
+
+  // Physics
+  "speed of light": "299,792,458 m/s (in vacuum)",
+  "planck constant": "6.626 × 10⁻³⁴ J⋅s",
+  "gravitational constant": "6.67430 × 10⁻¹¹ m³⋅kg⁻¹⋅s⁻²",
+  "newton second law": "F = m × a",
+  "e=mc²": "E = m × c² (c = speed of light)",
+  "kinetic energy": "KE = ½ m v²",
+  "potential energy": "PE = m g h",
+  "ohm law": "V = I × R",
+  "power": "P = V × I or P = I² R",
+
+  // Chemistry
+  "boiling point of water": "100°C at 1 atm",
+  "freezing point of water": "0°C",
+  "avogadro number": "6.022 × 10²³ mol⁻¹",
+
+  // Biology
+  "photosynthesis": "6 CO₂ + 6 H₂O → C₆H₁₂O₆ + 6 O₂",
+  "mitochondria": "Powerhouse of the cell",
+
+  // History
+  "moon landing": "July 20, 1969 – Apollo 11",
+  "declaration of independence": "July 4, 1776",
+  "world war ii": "1939 – 1945",
+  "fall of berlin wall": "November 9, 1989",
+  "columbus discovered america": "1492",
+
+  // People
+  "albert einstein": "Physicist – theory of relativity",
+  "isaac newton": "Laws of motion, gravity",
+  "nikola tesla": "AC electricity, Tesla coil",
+
+  // General
+  "hello": "Hello, Admin Holt. How can I help?",
+  "who are you": "I am Sweetie, your AI assistant. I know science, math, history, and more.",
+  "joke": "Why do programmers prefer dark mode? Light attracts bugs."
+};
+
+/* ---------- RESPONSE ENGINE ---------- */
+function getAnswer(rawQuestion){
+  const q = normalize(rawQuestion);
+
+  // 1. Try direct keyword match
+  for (let key in knowledge) {
+    if (q.includes(key)) {
+      const value = knowledge[key];
+      if (value === "math") {
+        // Extract math expression
+        const mathPart = q.replace(/^(what is|calculate|solve|math)\s*/, '');
+        if (mathPart) {
+          const result = calculate(mathPart);
+          if (result !== null) return `${mathPart} = ${result}`;
+        }
+      } else {
+        return value;
+      }
     }
   }
 
-  // 2. Try math if looks like an expression
-  if(/[\d\+\-\*\/\^\%\(\)]/.test(q) && !/[^0-9\.\s\+\-\*\/\^\%\(\)]/.test(q)){
-    return calc('calculate '+q);
+  // 2. If no keyword, but looks like math → calculate
+  if (/[\d\+\-\*\/\^\%\(\)]/.test(q) && !/[a-z]{3,}/.test(q.replace(/math|pi|sqrt/g, ''))) {
+    const result = calculate(q);
+    if (result !== null) return `${q} = ${result}`;
   }
 
   // 3. Fallback
@@ -223,17 +227,18 @@ function getAnswer(question){
 /* ---------- INPUT HANDLING ---------- */
 function sendMsg(){
   const q = input.value.trim();
-  if(!q) return;
-  addMsg('user',q);
-  input.value='';
-  setTimeout(()=>{
+  if (!q) return;
+  addMsg('user', q);
+  input.value = '';
+  setTimeout(() => {
     const ans = getAnswer(q);
-    addMsg('sweetie',ans);
-  },600+Math.random()*800);
+    addMsg('sweetie', ans);
+  }, 600 + Math.random() * 800);
 }
-send.addEventListener('click',sendMsg);
-input.addEventListener('keypress',e=>{if(e.key==='Enter')sendMsg();});
-setTimeout(()=>input.focus(),intro.length*100+3000);
+
+send.addEventListener('click', sendMsg);
+input.addEventListener('keypress', e => { if (e.key === 'Enter') sendMsg(); });
+setTimeout(() => input.focus(), intro.length * 100 + 3000);
 </script>
 </body>
 </html>
