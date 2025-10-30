@@ -8,283 +8,232 @@
   <style>
     @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
 
-    body {
-      margin: 0;
-      padding: 0;
-      background: #000;
-      color: #0f0;
-      font-family: 'VT323', monospace;
-      overflow: hidden;
-      height: 100vh;
+    body{
+      margin:0;padding:0;background:#000;color:#0f0;
+      font-family:'VT323',monospace;overflow:hidden;height:100vh;
     }
-
-    canvas {
-      position: fixed;
-      top: 0; left: 0;
-      z-index: -1;
+    canvas{position:fixed;top:0;left:0;z-index:-1;}
+    #container{
+      position:relative;z-index:10;padding:20px;max-width:900px;
+      margin:0 auto;height:100vh;display:flex;flex-direction:column;
+      justify-content:space-between;
     }
-
-    #container {
-      position: relative;
-      z-index: 10;
-      padding: 20px;
-      max-width: 900px;
-      margin: 0 auto;
-      height: 100vh;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
+    #typing{font-size:2em;margin:40px 0;min-height:60px;text-align:center;letter-spacing:2px;}
+    #terminal{
+      background:rgba(0,20,0,0.8);border:2px solid #0f0;border-radius:8px;
+      padding:15px;height:45vh;overflow-y:auto;font-size:1.4em;box-shadow:0 0 20px #0f0;
     }
-
-    #typing {
-      font-size: 2em;
-      margin: 40px 0;
-      min-height: 60px;
-      text-align: center;
-      letter-spacing: 2px;
+    .msg{margin:8px 0;animation:fadeIn .5s;}
+    .user{color:#0ff;}
+    .sweetie{color:#0f0;}
+    .prompt{color:#0f0;margin-top:10px;}
+    #input-area{display:flex;margin-top:10px;}
+    #user-input{
+      flex:1;background:#000;border:1px solid #0f0;color:#0f0;
+      padding:10px;font-family:'VT323',monospace;font-size:1.3em;outline:none;
     }
-
-    #terminal {
-      background: rgba(0, 20, 0, 0.8);
-      border: 2px solid #0f0;
-      border-radius: 8px;
-      padding: 15px;
-      height: 45vh;
-      overflow-y: auto;
-      font-size: 1.4em;
-      box-shadow: 0 0 20px #0f0;
+    #send-btn{
+      background:#000;color:#0f0;border:1px solid #0f0;padding:0 15px;
+      font-family:'VT323',monospace;font-size:1.3em;cursor:pointer;
     }
-
-    .msg {
-      margin: 8px 0;
-      animation: fadeIn 0.5s;
+    #send-btn:hover{background:#030;}
+    #clock-container{text-align:center;margin:20px 0;font-size:1.8em;}
+    select{
+      background:#000;color:#0f0;border:1px solid #0f0;padding:8px;
+      font-family:'VT323',monospace;font-size:1em;margin-left:10px;
     }
-
-    .user { color: #0ff; }
-    .sweetie { color: #0f0; }
-    .prompt {
-      color: #0f0;
-      margin-top: 10px;
-    }
-
-    #input-area {
-      display: flex;
-      margin-top: 10px;
-    }
-
-    #user-input {
-      flex: 1;
-      background: #000;
-      border: 1px solid #0f0;
-      color: #0f0;
-      padding: 10px;
-      font-family: 'VT323', monospace;
-      font-size: 1.3em;
-      outline: none;
-    }
-
-    #send-btn {
-      background: #000;
-      color: #0f0;
-      border: 1px solid #0f0;
-      padding: 0 15px;
-      font-family: 'VT323', monospace;
-      font-size: 1.3em;
-      cursor: pointer;
-    }
-
-    #send-btn:hover { background: #030; }
-
-    #clock-container {
-      text-align: center;
-      margin: 20px 0;
-      font-size: 1.8em;
-    }
-
-    select {
-      background: #000;
-      color: #0f0;
-      border: 1px solid #0f0;
-      padding: 8px;
-      font-family: 'VT323', monospace;
-      font-size: 1em;
-      margin-left: 10px;
-    }
-
-    @keyframes fadeIn {
-      from { opacity: 0; }
-      to { opacity: 1; }
-    }
+    @keyframes fadeIn{from{opacity:0}to{opacity:1}}
   </style>
 </head>
 <body>
 
-  <canvas id="matrix"></canvas>
+<canvas id="matrix"></canvas>
 
-  <div id="container">
-    <div id="typing"></div>
+<div id="container">
+  <div id="typing"></div>
 
-    <div id="clock-container">
-      <div id="clock">Loading...</div>
-      <select id="timezone-select"></select>
-    </div>
-
-    <div id="terminal">
-      <div class="msg sweetie">> Sweetie online. Awaiting input...</div>
-    </div>
-
-    <div id="input-area">
-      <input type="text" id="user-input" placeholder="Ask Sweetie..." autocomplete="off" />
-      <button id="send-btn">SEND</button>
-    </div>
+  <div id="clock-container">
+    <div id="clock">Loading...</div>
+    <select id="timezone-select"></select>
   </div>
 
-  <script>
-    // === MATRIX RAIN BACKGROUND ===
-    const canvas = document.getElementById('matrix');
-    const ctx = canvas.getContext('2d');
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
+  <div id="terminal">
+    <div class="msg sweetie">> Sweetie online. Awaiting input...</div>
+  </div>
 
-    const matrix = "ABCDEFGHIJKLMNOPQRSTUVWXYZ123456789@#$%^&*()*&^%+-/~{[|`]}";
-    const fontSize = 16;
-    const columns = canvas.width / fontSize;
+  <div id="input-area">
+    <input type="text" id="user-input" placeholder="Ask Sweetie..." autocomplete="off" />
+    <button id="send-btn">SEND</button>
+  </div>
+</div>
 
-    const drops = [];
-    for (let x = 0; x < columns; x++) drops[x] = 1;
+<script>
+/* ---------- MATRIX RAIN ---------- */
+const canvas=document.getElementById('matrix'),ctx=canvas.getContext('2d');
+canvas.width=window.innerWidth;canvas.height=window.innerHeight;
+const chars="01",fontSize=16,columns=canvas.width/fontSize;
+const drops=[];
+for(let i=0;i<columns;i++)drops[i]=1;
+function draw(){
+  ctx.fillStyle='rgba(0,0,0,0.04)';ctx.fillRect(0,0,canvas.width,canvas.height);
+  ctx.fillStyle='#0f0';ctx.font=fontSize+'px monospace';
+  for(let i=0;i<drops.length;i++){
+    const text=chars[Math.floor(Math.random()*chars.length)];
+    ctx.fillText(text,i*fontSize,drops[i]*fontSize);
+    if(drops[i]*fontSize>canvas.height&&Math.random()>0.975)drops[i]=0;
+    drops[i]++;
+  }
+}
+setInterval(draw,35);
+window.addEventListener('resize',()=>{canvas.width=window.innerWidth;canvas.height=window.innerHeight;});
 
-    function draw() {
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.04)';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+/* ---------- TYPING INTRO ---------- */
+const intro="Domain Admin Everett Holt, ask Sweetie a Question";
+const typing=document.getElementById('typing');
+let idx=0;
+function type(){if(idx<intro.length){typing.textContent+=intro[idx++];setTimeout(type,80+Math.random()*50);}else setTimeout(()=>addMsg('sweetie','> Ready. Type your question.'),1000);}
+setTimeout(type,1500);
 
-      ctx.fillStyle = '#0f0';
-      ctx.font = fontSize + 'px monospace';
+/* ---------- WORLD CLOCK ---------- */
+const clock=document.getElementById('clock'),tzSel=document.getElementById('timezone-select');
+const tzs=["America/Los_Angeles","America/New_York","Europe/London","Europe/Paris","Asia/Tokyo","Australia/Sydney"];
+let curTz="America/Los_Angeles";
+tzs.forEach(tz=>{const o=document.createElement('option');o.value=tz;o.textContent=tz.replace(/^.*\//,'').replace('_',' ');if(tz===curTz)o.selected=true;tzSel.appendChild(o);});
+function updateClock(){
+  const d=new Date().toLocaleString('en-US',{timeZone:curTz});
+  const date=new Date(d);
+  clock.textContent=date.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false})+
+    ' | '+date.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+}
+tzSel.addEventListener('change',e=>{curTz=e.target.value;updateClock();});
+updateClock();setInterval(updateClock,1000);
 
-      for (let i = 0; i < drops.length; i++) {
-        const text = matrix[Math.floor(Math.random() * matrix.length)];
-        ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+/* ---------- SWEETIE AI ---------- */
+const term=document.getElementById('terminal'),input=document.getElementById('user-input'),send=document.getElementById('send-btn');
 
-        if (drops[i] * fontSize > canvas.height && Math.random() > 0.975)
-          drops[i] = 0;
+function addMsg(sender,text){
+  const div=document.createElement('div');
+  div.className='msg '+sender;
+  div.innerHTML='> '+text;
+  term.appendChild(div);
+  term.scrollTop=term.scrollHeight;
+}
 
-        drops[i]++;
-      }
+/* ---------- KNOWLEDGE BASE ---------- */
+const knowledge={
+
+  // ---------- MATH ----------
+  "calculate":calc,
+  "what is":calc,
+  "solve":calc,
+  "math":calc,
+
+  // ---------- PHYSICS ----------
+  "speed of light":"299 792 458 m/s (exact value in vacuum).",
+  "planck constant":"6.626 070 15 × 10⁻³⁴ J⋅s",
+  "gravitational constant":"6.674 30 × 10⁻¹¹ m³⋅kg⁻¹⋅s⁻²",
+  "newton second law":"F = m × a",
+  "einstein e=mc²":"E = m × c²  (c = speed of light)",
+  "kinetic energy":"KE = ½ m v²",
+  "potential energy":"PE = m g h",
+  "ohm law":"V = I × R",
+  "power":"P = V × I  or  P = I² R",
+
+  // ---------- CHEMISTRY ----------
+  "water boiling point":"100 °C at 1 atm",
+  "water freezing point":"0 °C",
+  "avogadro number":"6.022 140 76 × 10²³ mol⁻¹",
+  "periodic table":"H, He, Li, Be, B, C, N, O, F, Ne, … (118 elements)",
+
+  // ---------- BIOLOGY ----------
+  "photosynthesis":"6 CO₂ + 6 H₂O → C₆H₁₂O₆ + 6 O₂",
+  "dna":"Deoxyribonucleic acid – carries genetic information",
+  "mitochondria":"Powerhouse of the cell",
+
+  // ---------- HISTORY ----------
+  "declaration of independence":"July 4, 1776 (USA)",
+  "world war i":"1914 – 1918",
+  "world war ii":"1939 – 1945",
+  "moon landing":"July 20, 1969 – Apollo 11",
+  "fall of berlin wall":"November 9, 1989",
+  "columbus america":"1492",
+  "magna carta":"1215",
+  "french revolution":"1789",
+  "einstein relativity":"1905 (special), 1915 (general)",
+  "first computer":"ENIAC, 1945",
+
+  // ---------- FAMOUS PEOPLE ----------
+  "albert einstein":"Physicist, theory of relativity",
+  "isaac newton":"Laws of motion, universal gravitation",
+  "marie curie":"Discovered radium & polonium, 2 Nobel prizes",
+  "nikola tesla":"AC electricity, Tesla coil",
+  "ada lovelace":"First computer programmer",
+
+  // ---------- GENERAL ----------
+  "hello":"Hello, Admin Holt. How can I assist?",
+  "who are you":"I am Sweetie, your AI terminal assistant. I know math, physics, science, history, and more.",
+  "what is your purpose":"To answer your questions with accuracy and speed.",
+  "tell me a joke":"Why do physicists love elevators? They lift their spirits.",
+  "how do i deploy to railway":"Push code → GitHub → Connect repo in Railway → Deploy.",
+
+  // Add more entries here anytime!
+};
+
+/* ---------- CALCULATION ENGINE ---------- */
+function calc(q){
+  // Extract expression after keyword
+  const expr = q.replace(/^(calculate|what is|solve|math)\s+/i,'').trim();
+  if(!expr) return "Please provide a math expression.";
+  // Safe list of allowed tokens
+  const allowed = /^[\d\s\+\-\*\/\^\%\(\)\.eπ√,Math\.]+$/;
+  if(!allowed.test(expr)) return "Invalid characters in expression.";
+  try{
+    // Replace common symbols
+    let safe = expr
+      .replace(/π/g,'Math.PI')
+      .replace(/√/g,'Math.sqrt')
+      .replace(/\^/g,'**')
+      .replace(/,/g,'.');
+    const result = Function('"use strict";return ('+safe+')')();
+    return `${expr} = ${Number(result.toFixed(8))}`;
+  }catch(e){return "Math error – check syntax."}
+}
+
+/* ---------- RESPONSE LOGIC ---------- */
+function getAnswer(question){
+  const q = question.toLowerCase().trim();
+
+  // 1. Exact / partial keyword match
+  for(let key in knowledge){
+    if(q.includes(key)){
+      const res = knowledge[key];
+      return (typeof res === 'function') ? res(q) : res;
     }
+  }
 
-    setInterval(draw, 35);
-    window.addEventListener('resize', () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-    });
+  // 2. Try math if looks like an expression
+  if(/[\d\+\-\*\/\^\%\(\)]/.test(q) && !/[^0-9\.\s\+\-\*\/\^\%\(\)]/.test(q)){
+    return calc('calculate '+q);
+  }
 
-    // === TYPING ANIMATION ===
-    const message = "Domain Admin Everett Holt, ask Sweetie a Question";
-    const typingEl = document.getElementById("typing");
-    let i = 0;
+  // 3. Fallback
+  return "Sorry, I haven't learned the answer to that yet. Let me get back to you.";
+}
 
-    function typeChar() {
-      if (i < message.length) {
-        typingEl.textContent += message[i];
-        i++;
-        setTimeout(typeChar, 80 + Math.random() * 50);
-      } else {
-        setTimeout(() => {
-          typingEl.innerHTML += "<br><br>";
-          addMessage("sweetie", "> Ready. Type your question below.");
-        }, 1000);
-      }
-    }
-    setTimeout(typeChar, 1500);
-
-    // === WORLD CLOCK ===
-    const clockEl = document.getElementById("clock");
-    const tzSelect = document.getElementById("timezone-select");
-    const timezones = [
-      "America/Los_Angeles", "America/New_York", "Europe/London",
-      "Europe/Paris", "Asia/Tokyo", "Australia/Sydney"
-    ];
-    let currentTz = "America/Los_Angeles";
-
-    timezones.forEach(tz => {
-      const opt = document.createElement("option");
-      opt.value = tz;
-      opt.textContent = tz.replace(/^.*\//, "").replace("_", " ");
-      if (tz === currentTz) opt.selected = true;
-      tzSelect.appendChild(opt);
-    });
-
-    function updateClock() {
-      const now = new Date().toLocaleString("en-US", { timeZone: currentTz });
-      const d = new Date(now);
-      clockEl.textContent = d.toLocaleTimeString("en-US", {
-        hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false
-      }) + " | " + d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
-    }
-
-    tzSelect.addEventListener("change", e => { currentTz = e.target.value; updateClock(); });
-    updateClock();
-    setInterval(updateClock, 1000);
-
-    // === SWEETIE AI CHAT ===
-    const terminal = document.getElementById("terminal");
-    const input = document.getElementById("user-input");
-    const sendBtn = document.getElementById("send-btn");
-
-    function addMessage(sender, text) {
-      const div = document.createElement("div");
-      div.className = "msg " + sender;
-      div.innerHTML = (sender === "user" ? "> " : "> ") + text;
-      terminal.appendChild(div);
-      terminal.scrollTop = terminal.scrollHeight;
-    }
-
-    // Simple knowledge base
-    const knowledge = {
-      "hello": "Hello, Admin Holt. How can I assist?",
-      "who are you": "I am Sweetie, your domain AI assistant. Ask me anything.",
-      "what time is it": () => `Current time in ${currentTz.replace(/^.*\//, "")}: ${new Date().toLocaleTimeString()}`,
-      "what is your purpose": "To serve Domain Admin Everett Holt and answer questions to the best of my ability.",
-      "tell me a joke": "Why do programmers prefer dark mode? Because light attracts bugs.",
-      "how do i deploy to railway": "Push your code to GitHub → Connect repo in Railway → Deploy. Done.",
-      "what is xai": "xAI builds AI to accelerate human scientific discovery. I was made by xAI.",
-      "who is grok": "Grok is an AI by xAI. I'm Sweetie — your personal terminal assistant."
-    };
-
-    function getResponse(question) {
-      const q = question.toLowerCase().trim();
-
-      for (let key in knowledge) {
-        if (q.includes(key)) {
-          const res = knowledge[key];
-          return typeof res === "function" ? res() : res;
-        }
-      }
-
-      // Fallback
-      return "Sorry, I haven't learned the answer to that yet. Let me get back to you.";
-    }
-
-    function sendMessage() {
-      const question = input.value.trim();
-      if (!question) return;
-
-      addMessage("user", question);
-      input.value = "";
-
-      setTimeout(() => {
-        const answer = getResponse(question);
-        addMessage("sweetie", answer);
-      }, 600 + Math.random() * 800);
-    }
-
-    sendBtn.addEventListener("click", sendMessage);
-    input.addEventListener("keypress", e => {
-      if (e.key === "Enter") sendMessage();
-    });
-
-    // Focus input after typing
-    setTimeout(() => input.focus(), message.length * 100 + 3000);
-
-  </script>
+/* ---------- INPUT HANDLING ---------- */
+function sendMsg(){
+  const q = input.value.trim();
+  if(!q) return;
+  addMsg('user',q);
+  input.value='';
+  setTimeout(()=>{
+    const ans = getAnswer(q);
+    addMsg('sweetie',ans);
+  },600+Math.random()*800);
+}
+send.addEventListener('click',sendMsg);
+input.addEventListener('keypress',e=>{if(e.key==='Enter')sendMsg();});
+setTimeout(()=>input.focus(),intro.length*100+3000);
+</script>
 </body>
 </html>
